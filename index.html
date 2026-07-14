@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>👗 Emma Dress Up + Draw + Tic Tac Toe + Grammar</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #fdf6e3; min-height: 100vh; display: flex; justify-content: center; align-items: center; font-family: 'Comic Sans MS', 'Segoe UI', sans-serif; padding: 10px; }
+        .game-wrapper { display: flex; gap: 10px; align-items: flex-start; width: 100%; max-width: 950px; }
+        .main-area { position: relative; flex: 1; aspect-ratio: 4/3; border-radius: 20px; overflow: hidden; box-shadow: 0 8px 25px rgba(0,0,0,0.15); border: 3px solid #e8c4a0; background: #fff; touch-action: none; }
+        .room-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; pointer-events: none; display: block; }
+        .emma-area { position: absolute; bottom: 3%; left: 50%; transform: translateX(-50%); width: 50%; height: 80%; z-index: 2; pointer-events: none; display: block; }
+        .emma-base { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; height: 100%; object-fit: contain; z-index: 3; }
+        .clothing-on-emma { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 4; }
+        .clothing-on-emma img { position: absolute; height: auto; object-fit: contain; cursor: grab; transform: translate(-50%, -50%); pointer-events: auto; }
+        .clothing-on-emma img:active { cursor: grabbing; }
+        .clothing-on-emma img.z-bottom { z-index: 5; } .clothing-on-emma img.z-mid { z-index: 6; } .clothing-on-emma img.z-top { z-index: 7; }
+
+        .score { position: absolute; top: 5px; right: 5px; z-index: 100; background: rgba(255,255,255,0.9); padding: 3px 8px; border-radius: 10px; font-size: 12px; font-weight: 700; color: #27ae60; }
+
+        .task-bar { position: absolute; top: 38px; left: 5px; right: 5px; z-index: 100; background: rgba(255,255,255,0.9); padding: 6px 10px; border-radius: 14px; font-size: 12px; font-weight: 800; color: #e74c3c; text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,0.1); min-height: 22px; display: flex; align-items: center; justify-content: center; gap: 6px; transition: background 0.3s; }
+        .btn-hear { background: #ff6b8a; color: white; border: none; border-radius: 50%; width: 22px; height: 22px; font-size: 11px; cursor: pointer; flex-shrink: 0; }
+        .btn-stop { background: #e74c3c; color: white; border: none; border-radius: 50%; width: 22px; height: 22px; font-size: 11px; cursor: pointer; flex-shrink: 0; }
+        .big-check { position: absolute; bottom: 8px; left: 8px; z-index: 100; padding: 10px 24px; border-radius: 20px; border: none; font-weight: 700; cursor: pointer; font-family: inherit; color: white; font-size: 15px; background: #27ae60; box-shadow: 0 4px 0 #1e8449; transition: 0.1s; display: none; }
+        .big-check:active { transform: translateY(2px); box-shadow: 0 2px 0 #1e8449; } .big-check.show { display: block; } .big-check:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-ready { position: absolute; bottom: 8px; left: 8px; z-index: 100; padding: 10px 20px; border-radius: 20px; border: none; font-weight: 700; cursor: pointer; font-family: inherit; color: white; font-size: 14px; background: #ff6b8a; box-shadow: 0 4px 0 #e74c3c; transition: 0.1s; }
+        .btn-ready:active { transform: translateY(2px); box-shadow: 0 2px 0 #e74c3c; } .btn-ready.hidden { display: none; }
+        .writing-popup { position: absolute; top: 5%; left: 50%; transform: translateX(-50%); z-index: 200; background: rgba(255,255,255,0.97); padding: 12px 16px; border-radius: 20px; box-shadow: 0 8px 25px rgba(0,0,0,0.2); border: 3px solid #ff6b8a; display: none; text-align: center; }
+        .writing-popup.show { display: block; } .popup-example { font-size: 11px; color: #888; margin-bottom: 6px; background: #fff9e0; padding: 4px 10px; border-radius: 10px; display: inline-block; }
+        .writing-popup input { padding: 8px 12px; border-radius: 14px; border: 2px solid #ff6b8a; font-size: 13px; font-family: inherit; width: 220px; font-weight: 700; background: #fff5f5; margin-bottom: 6px; text-align: center; }
+        .writing-popup .btn-row { display: flex; gap: 6px; justify-content: center; }
+        .btn { padding: 6px 12px; border-radius: 10px; border: none; font-weight: 700; cursor: pointer; font-family: inherit; color: white; font-size: 11px; transition: 0.15s; white-space: nowrap; }
+        .btn-check { background: #27ae60; } .btn-clear { background: #e67e22; } .btn-close { background: #95a5a6; }
+
+        .feedback { position: absolute; top: 68px; left: 50%; transform: translateX(-50%); z-index: 100; font-size: 12px; font-weight: 700; text-align: center; background: rgba(255,255,255,0.95); padding: 4px 12px; border-radius: 10px; max-width: 80%; }
+        .feedback.correct { color: #27ae60; } .feedback.wrong { color: #e74c3c; }
+        .amazing-overlay { position: absolute; top: 30%; left: 50%; transform: translate(-50%, -50%); z-index: 200; font-size: 36px; font-weight: 900; pointer-events: none; animation: amazingPop 0.8s ease forwards; text-shadow: 0 4px 10px rgba(0,0,0,0.2); white-space: nowrap; color: #ff6b8a; }
+        @keyframes amazingPop { 0% { transform: translate(-50%, -50%) scale(0); opacity: 0; } 50% { transform: translate(-50%, -50%) scale(1.4); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; } }
+        .heart-burst { position: absolute; pointer-events: none; z-index: 150; font-size: 24px; animation: heartUp 1.5s ease forwards; }
+        @keyframes heartUp { 0% { transform: translateY(0) scale(0.5); opacity: 1; } 100% { transform: translateY(-80px) scale(1.6); opacity: 0; } }
+        .wardrobe { width: 170px; background: rgba(255,255,255,0.7); border-radius: 14px; padding: 8px; display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border: 2px solid #e8c4a0; max-height: 500px; overflow-y: auto; z-index: 5; align-content: flex-start; }
+        .wardrobe-item { width: 65px; height: auto; border-radius: 10px; cursor: pointer; background: rgba(255,255,255,0.8); border: 2px dashed #e8c4a0; display: flex; flex-direction: column; align-items: center; transition: 0.15s; user-select: none; padding: 4px; }
+        .wardrobe-item:hover { border-color: #ff6b8a; background: #fff5f5; } .wardrobe-item:active { transform: scale(0.95); }
+        .wardrobe-item img { width: 48px; height: 48px; object-fit: contain; pointer-events: none; }
+        .wardrobe-label { font-size: 9px; font-weight: 700; text-align: center; line-height: 1.2; margin-top: 2px; max-width: 60px; word-wrap: break-word; }
+
+        .ttt-container, .grammar-container, .draw-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 50; background: white; }
+        .ttt-container.show, .grammar-container.show, .draw-overlay.show { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .ttt-board-img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; z-index: 1; }
+        .ttt-cell { position: absolute; cursor: pointer; z-index: 5; }
+        .ttt-x, .ttt-o { position: absolute; pointer-events: none; z-index: 6; font-size: clamp(30px, 5vw, 50px); font-weight: 900; transform: translate(-50%, -50%); text-shadow: 0 3px 6px rgba(0,0,0,0.3); }
+        .ttt-x { color: #ff6b8a; } .ttt-o { color: #4ecdc4; }
+        .ttt-turn { position: absolute; top: 5px; left: 50%; transform: translateX(-50%); z-index: 10; font-size: 14px; font-weight: 700; background: rgba(255,255,255,0.9); padding: 4px 12px; border-radius: 12px; }
+        .ttt-switch { position: absolute; bottom: 8px; right: 8px; z-index: 10; padding: 6px 12px; border-radius: 12px; border: none; font-weight: 700; cursor: pointer; font-family: inherit; font-size: 11px; background: #9b59b6; color: white; }
+        .ttt-reset { position: absolute; bottom: 8px; left: 8px; z-index: 10; padding: 6px 12px; border-radius: 12px; border: none; font-weight: 700; cursor: pointer; font-family: inherit; font-size: 11px; background: #e67e22; color: white; }
+
+        .grammar-card { background: white; border: 3px solid #ff6b8a; border-radius: 20px; padding: 20px 24px; text-align: center; box-shadow: 0 8px 25px rgba(0,0,0,0.15); max-width: 400px; width: 85%; animation: flipIn 0.4s ease; }
+        @keyframes flipIn { from { opacity: 0; transform: rotateY(90deg); } to { opacity: 1; transform: rotateY(0); } }
+        .grammar-card .sentence { font-size: clamp(16px, 2.5vw, 22px); font-weight: 700; color: #2c3e50; margin-bottom: 12px; line-height: 1.4; }
+        .grammar-card select { padding: 10px 16px; border-radius: 12px; border: 2px solid #ff6b8a; font-size: clamp(14px, 2vw, 18px); font-family: inherit; font-weight: 700; background: #fff5f5; cursor: pointer; text-align: center; }
+        .grammar-card .result { font-size: clamp(14px, 2vw, 18px); font-weight: 700; margin-top: 10px; min-height: 24px; }
+        .grammar-card .result.correct { color: #27ae60; } .grammar-card .result.wrong { color: #e74c3c; }
+        .grammar-progress { font-size: 13px; color: #888; margin-bottom: 8px; }
+        .btn-grammar-restart { padding: 8px 20px; border-radius: 15px; border: none; font-weight: 700; cursor: pointer; font-family: inherit; color: white; font-size: 13px; background: #9b59b6; margin-top: 10px; }
+
+        .draw-overlay { background: white; } .draw-overlay.show { display: block; }
+        .draw-canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><text y="20" font-size="20">✏️</text></svg>') 0 20, auto; background: white; }
+        .draw-toolbar { position: absolute; bottom: 5px; left: 5px; right: 5px; z-index: 100; display: flex; gap: 4px; justify-content: center; align-items: center; flex-wrap: wrap; }
+        .draw-color { width: 22px; height: 22px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; }
+        .draw-color.active { border-color: #333; }
+        .draw-btn { padding: 4px 10px; border-radius: 10px; border: none; font-weight: 700; cursor: pointer; font-family: inherit; color: white; font-size: 10px; }
+        .draw-btn-clear { background: #e67e22; } .draw-btn-save { background: #3498db; } .draw-btn-ready { background: #27ae60; }
+        .draw-slider { width: 50px; }
+
+        @media (max-width: 650px) { .game-wrapper { flex-direction: column; } .wardrobe { width: 100%; flex-direction: row; max-height: 120px; overflow-x: auto; } .wardrobe-item { width: 55px; } .wardrobe-item img { width: 38px; height: 38px; } .writing-popup input { width: 160px; } .grammar-card { padding: 14px 16px; } }
+    </style>
+</head>
+<body>
+<div class="game-wrapper">
+    <div class="main-area" id="mainArea">
+        <img class="room-bg" src="room.png" alt="Room" id="roomBg" onerror="this.style.display='none'">
+        <div class="emma-area" id="emmaArea"><img class="emma-base" src="emma.png" alt="Emma" onerror="this.src='emma.jpg'"><div class="clothing-on-emma" id="clothingOnEmma"></div></div>
+        
+        <div class="ttt-container" id="tttContainer">
+            <img class="ttt-board-img" src="board1.png" alt="Board" id="tttBoardImg" onerror="this.src='board1.jpg'">
+            <div class="ttt-turn" id="tttTurn">❤️ X's turn</div>
+            <button class="ttt-switch" onclick="switchTTTBoard()">🔄 Switch</button>
+            <button class="ttt-reset" onclick="resetTTT()">🔄 New</button>
+        </div>
+
+        <div class="grammar-container" id="grammarContainer">
+            <div class="grammar-card" id="grammarCard">
+                <div class="grammar-progress" id="grammarProgress">1 / 15</div>
+                <div class="sentence" id="grammarSentence">I ___ got a red T-shirt.</div>
+                <select id="grammarSelect">
+                    <option value="">-- choose --</option>
+                    <option value="have">HAVE</option>
+                    <option value="has">HAS</option>
+                </select>
+                <div class="result" id="grammarResult"></div>
+                <button class="btn-grammar-restart" id="btnGrammarRestart" onclick="resetGrammar()" style="display:none;">🔄 Try Again</button>
+            </div>
+        </div>
+
+        <div class="draw-overlay" id="drawOverlay">
+            <canvas class="draw-canvas" id="drawCanvas"></canvas>
+            <div class="draw-toolbar" id="drawToolbar"></div>
+        </div>
+
+        <div style="position:absolute;top:5px;left:5px;z-index:9999;display:flex;gap:4px;flex-wrap:wrap;" id="modeTabs">
+            <button onclick="setMode('free')" id="btnFree" style="padding:6px 10px;background:#ff6b8a;color:white;border:2px solid #ff6b8a;border-radius:15px;font-weight:bold;cursor:pointer;font-size:11px;">🎨 Free</button>
+            <button onclick="setMode('listen')" id="btnListen" style="padding:6px 10px;background:white;color:#ff6b8a;border:2px solid #ff6b8a;border-radius:15px;font-weight:bold;cursor:pointer;font-size:11px;">🎧 Listen</button>
+            <button onclick="setMode('ttt')" id="btnTTT" style="padding:6px 10px;background:white;color:#ff6b8a;border:2px solid #ff6b8a;border-radius:15px;font-weight:bold;cursor:pointer;font-size:11px;">🎯 TTT</button>
+            <button onclick="setMode('draw')" id="btnDraw" style="padding:6px 10px;background:white;color:#ff6b8a;border:2px solid #ff6b8a;border-radius:15px;font-weight:bold;cursor:pointer;font-size:11px;">✏️ Draw</button>
+            <button onclick="setMode('grammar')" id="btnGrammar" style="padding:6px 10px;background:white;color:#ff6b8a;border:2px solid #ff6b8a;border-radius:15px;font-weight:bold;cursor:pointer;font-size:11px;">📝 Have/Has</button>
+        </div>
+
+        <div class="score" id="score">⭐ 0</div>
+        <div class="task-bar" id="taskBar">Dress Emma and click «I'm ready!»</div>
+        <div class="feedback" id="feedback"></div>
+        <button class="btn-ready" id="btnReady" onclick="openWritingPopup()">✨ I'm ready!</button>
+        <div class="writing-popup" id="writingPopup">
+            <div class="popup-example">💡 Example: <b>Emma has got a pink dress and a bow!</b></div>
+            <input type="text" id="popupInput" placeholder="Emma has got...">
+            <div class="btn-row">
+                <button class="btn btn-check" onclick="checkFromPopup()">✅ CHECK</button>
+                <button class="btn btn-clear" onclick="clearClothes()">🗑️</button>
+                <button class="btn btn-close" onclick="closeWritingPopup()">✕</button>
+            </div>
+        </div>
+        <button class="big-check" id="bigCheckBtn" onclick="checkListenTask()">✅ CHECK</button>
+    </div>
+    <div class="wardrobe" id="wardrobe"></div>
+</div>
+<audio id="fanfare" preload="auto" src="fanfare.mp3"></audio>
+
+<script>
+    const clothingSizes = { 'sweater-striped': 52, 'tshirt-red': 48, 'skirt-yellow': 48, 'dress-yellow': 78, 'dress-pink': 60, 'coat-green': 54, 'boots': 50, 'hat-winter': 44, 'jacket-winter': 50, 'scarf': 42, 'trousers-black': 50, 'skirt-purple': 64, 'dress-party': 70, 'bow': 28 };
+    const wardrobeItems = [
+        { file: 'sweater-striped.png', alt: 'sweater-striped.jpg', kw: ['sweater', 'striped sweater'], id: 'sweater-striped', z: 'z-top', name: 'a red and white striped sweater', label: 'striped sweater', lc: '#e74c3c' },
+        { file: 'tshirt-red.png', alt: 'tshirt-red.jpg', kw: ['t-shirt', 'tshirt'], id: 'tshirt-red', z: 'z-bottom', name: 'a red T-shirt', label: 'red T-shirt', lc: '#e74c3c' },
+        { file: 'skirt-yellow.png', alt: 'skirt-yellow.jpg', kw: ['skirt', 'yellow skirt'], id: 'skirt-yellow', z: 'z-mid', name: 'a yellow skirt', label: 'yellow skirt', lc: '#f39c12' },
+        { file: 'dress-yellow.png', alt: 'dress-yellow.jpg', kw: ['dress', 'yellow dress'], id: 'dress-yellow', z: 'z-mid', name: 'a yellow dress', label: 'yellow dress', lc: '#f39c12' },
+        { file: 'dress-pink.png', alt: 'dress-pink.jpg', kw: ['dress', 'pink dress'], id: 'dress-pink', z: 'z-mid', name: 'a pink dress', label: 'pink dress', lc: '#e91e90' },
+        { file: 'coat-green.png', alt: 'coat-green.jpg', kw: ['coat', 'green coat'], id: 'coat-green', z: 'z-top', name: 'a green coat', label: 'green coat', lc: '#27ae60' },
+        { file: 'boots.png', alt: 'boots.jpg', kw: ['boots'], id: 'boots', z: 'z-mid', name: 'boots', label: 'boots', lc: '#795548' },
+        { file: 'hat-winter.png', alt: 'hat-winter.jpg', kw: ['hat', 'winter hat'], id: 'hat-winter', z: 'z-top', name: 'a winter hat', label: 'winter hat', lc: '#2196f3' },
+        { file: 'jacket-winter.png', alt: 'jacket-winter.jpg', kw: ['jacket', 'winter jacket'], id: 'jacket-winter', z: 'z-top', name: 'a winter jacket', label: 'winter jacket', lc: '#2196f3' },
+        { file: 'scarf.png', alt: 'scarf.jpg', kw: ['scarf'], id: 'scarf', z: 'z-top', name: 'a scarf', label: 'scarf', lc: '#9b59b6' },
+        { file: 'trousers-black.png', alt: 'trousers-black.jpg', kw: ['trousers', 'black trousers'], id: 'trousers-black', z: 'z-bottom', name: 'black trousers', label: 'black trousers', lc: '#333' },
+        { file: 'skirt-purple.png', alt: 'skirt-purple.jpg', kw: ['skirt', 'purple skirt'], id: 'skirt-purple', z: 'z-mid', name: 'a purple skirt with a bow', label: 'purple skirt', lc: '#9b59b6' },
+        { file: 'dress-party.png', alt: 'dress-party.jpg', kw: ['dress', 'party dress'], id: 'dress-party', z: 'z-mid', name: 'a party dress', label: 'party dress', lc: '#e91e90' },
+        { file: 'bow.png', alt: 'bow.jpg', kw: ['bow'], id: 'bow', z: 'z-top', name: 'a bow', label: 'bow', lc: '#e91e90' }
+    ];
+    const listenTasks = [
+        { text: 'Emma is going to the Arctic! She has got a winter jacket, a winter hat, a scarf, black trousers, and boots!', req: ['jacket', 'winter jacket', 'hat', 'winter hat', 'scarf', 'trousers', 'black trousers', 'boots'] },
+        { text: 'Emma is going to a party! She has got a party dress and a bow!', req: ['dress', 'party dress', 'bow'] },
+        { text: 'Emma is going skiing! She has got a winter jacket, a winter hat, black trousers, and boots!', req: ['jacket', 'winter jacket', 'hat', 'winter hat', 'trousers', 'black trousers', 'boots'] },
+        { text: 'Emma is at home today! She has got a red T-shirt and a yellow skirt!', req: ['t-shirt', 'tshirt', 'skirt', 'yellow skirt'] },
+        { text: 'Emma is going for an autumn walk! She has got a striped sweater, black trousers, and a scarf!', req: ['sweater', 'striped sweater', 'trousers', 'black trousers', 'scarf'] },
+        { text: 'Emma is going to the park! She has got a pink dress and a bow!', req: ['dress', 'pink dress', 'bow'] },
+        { text: 'Emma is going to a windy city! She has got a green coat, black trousers, and a scarf!', req: ['coat', 'green coat', 'trousers', 'black trousers', 'scarf'] },
+        { text: 'Emma is going to a birthday party! She has got a party dress and a bow!', req: ['dress', 'party dress', 'bow'] },
+        { text: 'Emma is going to a concert! She has got a red T-shirt and a purple skirt with a bow!', req: ['t-shirt', 'tshirt', 'skirt', 'purple skirt'] }
+    ];
+    const grammarQuestions = [
+        { sentence: 'I ___ got a red T-shirt.', answer: 'have' },
+        { sentence: 'I ___ got a pink dress.', answer: 'have' },
+        { sentence: 'I ___ got a winter hat.', answer: 'have' },
+        { sentence: 'I ___ got black trousers.', answer: 'have' },
+        { sentence: 'I ___ got a scarf.', answer: 'have' },
+        { sentence: 'Emma ___ got a party dress.', answer: 'has' },
+        { sentence: 'She ___ got a yellow skirt.', answer: 'has' },
+        { sentence: 'He ___ got a winter jacket.', answer: 'has' },
+        { sentence: 'Tom ___ got a striped sweater.', answer: 'has' },
+        { sentence: 'It ___ got a bow.', answer: 'has' },
+        { sentence: 'She ___ got boots.', answer: 'has' },
+        { sentence: 'Anna ___ got a green coat.', answer: 'has' },
+        { sentence: 'He ___ got a purple skirt.', answer: 'has' },
+        { sentence: 'My sister ___ got a red T-shirt.', answer: 'has' },
+        { sentence: 'I ___ got shorts.', answer: 'have' }
+    ];
+    const amazingPhrases = ['💖 Amazing! 💖', '🌟 Super! 🌟', '🎉 Great job! 🎉', '✨ Wonderful! ✨', '👏 Well done! 👏', '💪 You rock! 💪'];
+    const taskColors = ['#ffe0e0', '#e0ffe0', '#e0e8ff', '#fff9e0', '#f0e0ff', '#e0fff9'];
+    const drawColors = ['#1a1a1a','#555','#e74c3c','#e91e63','#f39c12','#f1c40f','#27ae60','#2ecc71','#2196f3','#00bcd4','#9b59b6','#8e44ad','#795548','#ff9800'];
+    const board1Zones = [ { top: 21.5, left: 17.9, width: 21.2, height: 19.2 }, { top: 22.0, left: 39.9, width: 20.7, height: 18.5 }, { top: 21.8, left: 61.6, width: 21.0, height: 18.5 }, { top: 42.1, left: 18.4, width: 20.5, height: 18.0 }, { top: 41.5, left: 40.4, width: 20.2, height: 18.7 }, { top: 41.3, left: 61.8, width: 20.7, height: 19.0 }, { top: 61.5, left: 18.3, width: 20.7, height: 19.2 }, { top: 61.3, left: 39.9, width: 20.7, height: 19.5 }, { top: 61.5, left: 61.9, width: 20.0, height: 17.5 } ];
+    const board2Zones = [ { top: 21.1, left: 18.3, width: 20.3, height: 19.5 }, { top: 21.6, left: 40.1, width: 20.8, height: 19.0 }, { top: 21.8, left: 61.6, width: 21.0, height: 18.5 }, { top: 42.0, left: 18.1, width: 20.5, height: 18.2 }, { top: 41.8, left: 39.8, width: 20.8, height: 18.3 }, { top: 41.8, left: 61.8, width: 20.5, height: 18.3 }, { top: 61.5, left: 18.1, width: 20.7, height: 19.0 }, { top: 61.5, left: 40.4, width: 20.3, height: 18.7 }, { top: 61.0, left: 61.9, width: 19.8, height: 19.2 } ];
+
+    let mode = 'free', wearing = [], dragItem = null, dragOffsetX = 0, dragOffsetY = 0, score = 0, currentTask = null, isLocked = false;
+    let shuffledTasks = [], taskIndex = 0, britishVoice = null;
+    let tttBoard = 1, tttCells = Array(9).fill(null), tttTurn = 'X', tttGameOver = false;
+    let drawColor = '#1a1a1a', drawSize = 4, drawCtx = null, drawCanvasEl = null, drawAudioCtx = null, drawDrawing = false;
+    let grammarIndex = 0, grammarShuffled = [], grammarScore = 0;
+
+    function shuffleArray(arr) { return arr.sort(() => Math.random() - 0.5); }
+    function findBritishVoice() { const voices = speechSynthesis.getVoices(); britishVoice = voices.find(v => v.lang.startsWith('en-GB')) || null; }
+    speechSynthesis.onvoiceschanged = findBritishVoice; findBritishVoice();
+    function speak(text) { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = 'en-GB'; if (britishVoice) u.voice = britishVoice; u.rate = 0.85; speechSynthesis.speak(u); }
+
+    const mainArea = document.getElementById('mainArea'), roomBg = document.getElementById('roomBg'),
+          emmaArea = document.getElementById('emmaArea'), clothingOnEmma = document.getElementById('clothingOnEmma'),
+          wardrobe = document.getElementById('wardrobe'), feedback = document.getElementById('feedback'),
+          taskBar = document.getElementById('taskBar'), scoreDisplay = document.getElementById('score'),
+          bigCheckBtn = document.getElementById('bigCheckBtn'), btnReady = document.getElementById('btnReady'),
+          writingPopup = document.getElementById('writingPopup'), popupInput = document.getElementById('popupInput'),
+          tttContainer = document.getElementById('tttContainer'), tttBoardImg = document.getElementById('tttBoardImg'),
+          tttTurnDisplay = document.getElementById('tttTurn'),
+          grammarContainer = document.getElementById('grammarContainer'),
+          grammarSentence = document.getElementById('grammarSentence'),
+          grammarSelect = document.getElementById('grammarSelect'),
+          grammarResult = document.getElementById('grammarResult'),
+          grammarProgress = document.getElementById('grammarProgress'),
+          btnGrammarRestart = document.getElementById('btnGrammarRestart'),
+          drawOverlay = document.getElementById('drawOverlay'), drawToolbar = document.getElementById('drawToolbar');
+
+    function playFanfare() {
+        const f = document.getElementById('fanfare');
+        if (!f) return;
+        f.volume = 1; f.currentTime = 0; f.play().catch(() => {});
+        setTimeout(() => {
+            const fade = setInterval(() => {
+                if (f.volume > 0.05) { f.volume -= 0.05; }
+                else { f.pause(); f.currentTime = 0; f.volume = 1; clearInterval(fade); }
+            }, 80);
+        }, 800);
+    }
+
+    function playClick() {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(600, ctx.currentTime);
+            gain.gain.setValueAtTime(0.15, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.start(); osc.stop(ctx.currentTime + 0.1);
+        } catch(e) {}
+    }
+
+    function buildDrawToolbar() {
+        drawToolbar.innerHTML = '';
+        drawColors.forEach(color => {
+            const btn = document.createElement('div'); btn.className = 'draw-color' + (color === drawColor ? ' active' : ''); btn.style.background = color;
+            btn.onclick = () => { drawColor = color; document.querySelectorAll('.draw-color').forEach(b => b.classList.remove('active')); btn.classList.add('active'); };
+            drawToolbar.appendChild(btn);
+        });
+        const slider = document.createElement('input'); slider.type = 'range'; slider.className = 'draw-slider'; slider.min = 2; slider.max = 15; slider.value = drawSize; slider.oninput = () => drawSize = parseInt(slider.value); drawToolbar.appendChild(slider);
+        const btnClear = document.createElement('button'); btnClear.className = 'draw-btn draw-btn-clear'; btnClear.textContent = '🗑️'; btnClear.onclick = () => { if (drawCtx) drawCtx.clearRect(0, 0, drawCanvasEl.width, drawCanvasEl.height); }; drawToolbar.appendChild(btnClear);
+        const btnSave = document.createElement('button'); btnSave.className = 'draw-btn draw-btn-save'; btnSave.textContent = '💾'; btnSave.onclick = () => { if (drawCanvasEl) { const a = document.createElement('a'); a.download = 'my-drawing.png'; a.href = drawCanvasEl.toDataURL('image/png'); a.click(); } }; drawToolbar.appendChild(btnSave);
+        const btnReadyDraw = document.createElement('button'); btnReadyDraw.className = 'draw-btn draw-btn-ready'; btnReadyDraw.textContent = '✨ Ready!';
+        btnReadyDraw.onclick = () => { writingPopup.classList.add('show'); popupInput.value = ''; popupInput.placeholder = 'I have got...'; document.querySelector('.popup-example').innerHTML = '💡 Example: <b>I have got a red T-shirt and blue jeans!</b>'; feedback.textContent = ''; feedback.className = 'feedback'; };
+        drawToolbar.appendChild(btnReadyDraw);
+    }
+
+    function initDrawCanvas() {
+        drawCanvasEl = document.getElementById('drawCanvas'); drawCtx = drawCanvasEl.getContext('2d');
+        function resize() { const rect = mainArea.getBoundingClientRect(); drawCanvasEl.width = rect.width; drawCanvasEl.height = rect.height; drawCtx.lineCap = 'round'; drawCtx.lineJoin = 'round'; }
+        resize(); window.addEventListener('resize', resize);
+        function getPos(e) { const rect = drawCanvasEl.getBoundingClientRect(); return { x: (e.clientX - rect.left) * (drawCanvasEl.width / rect.width), y: (e.clientY - rect.top) * (drawCanvasEl.height / rect.height) }; }
+        function playScribble() { if (!drawAudioCtx) try { drawAudioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {} if (!drawAudioCtx) return; try { const osc = drawAudioCtx.createOscillator(), gain = drawAudioCtx.createGain(); osc.type = 'triangle'; osc.frequency.setValueAtTime(800 + Math.random() * 400, drawAudioCtx.currentTime); gain.gain.setValueAtTime(0.03, drawAudioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, drawAudioCtx.currentTime + 0.05); osc.connect(gain); gain.connect(drawAudioCtx.destination); osc.start(); osc.stop(drawAudioCtx.currentTime + 0.05); } catch(e) {} }
+        function startDraw(pos) { drawDrawing = true; drawCtx.beginPath(); drawCtx.moveTo(pos.x, pos.y); drawCtx.strokeStyle = drawColor; drawCtx.lineWidth = drawSize; playScribble(); }
+        function moveDraw(pos) { if (!drawDrawing) return; drawCtx.lineTo(pos.x, pos.y); drawCtx.stroke(); if (Math.random() < 0.3) playScribble(); }
+        function stopDraw() { drawDrawing = false; drawCtx.beginPath(); }
+        drawCanvasEl.addEventListener('mousedown', (e) => startDraw(getPos(e))); drawCanvasEl.addEventListener('mousemove', (e) => moveDraw(getPos(e))); drawCanvasEl.addEventListener('mouseup', stopDraw); drawCanvasEl.addEventListener('mouseleave', stopDraw);
+        drawCanvasEl.addEventListener('touchstart', (e) => { e.preventDefault(); startDraw(getPos(e.touches[0])); }); drawCanvasEl.addEventListener('touchmove', (e) => { e.preventDefault(); moveDraw(getPos(e.touches[0])); }); drawCanvasEl.addEventListener('touchend', stopDraw);
+    }
+
+    function buildTTTCells() {
+        tttContainer.querySelectorAll('.ttt-cell, .ttt-x, .ttt-o').forEach(el => el.remove());
+        const zones = tttBoard === 1 ? board1Zones : board2Zones;
+        zones.forEach((z, i) => {
+            const cell = document.createElement('div'); cell.className = 'ttt-cell';
+            cell.style.top = z.top + '%'; cell.style.left = z.left + '%';
+            cell.style.width = z.width + '%'; cell.style.height = z.height + '%';
+            cell.addEventListener('click', () => tttClick(i)); tttContainer.appendChild(cell);
+        });
+    }
+    function tttClick(i) {
+        if (tttGameOver || tttCells[i]) return;
+        tttCells[i] = tttTurn;
+        const zones = tttBoard === 1 ? board1Zones : board2Zones;
+        const z = zones[i];
+        const marker = document.createElement('div');
+        marker.className = 'ttt-' + tttTurn.toLowerCase(); marker.textContent = tttTurn;
+        marker.style.top = (parseFloat(z.top) + parseFloat(z.height)/2) + '%';
+        marker.style.left = (parseFloat(z.left) + parseFloat(z.width)/2) + '%';
+        tttContainer.appendChild(marker);
+        const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+        let winner = null;
+        for (const [a,b,c] of wins) { if (tttCells[a] && tttCells[a] === tttCells[b] && tttCells[a] === tttCells[c]) { winner = tttCells[a]; break; } }
+        if (winner) { tttGameOver = true; tttTurnDisplay.textContent = '🎉 ' + winner + ' wins!'; playFanfare(); spawnHearts(); showAmazing(); return; }
+        if (tttCells.every(c => c)) { tttGameOver = true; tttTurnDisplay.textContent = '🤝 Draw!'; return; }
+        tttTurn = tttTurn === 'X' ? 'O' : 'X';
+        tttTurnDisplay.textContent = tttTurn === 'X' ? '❤️ X\'s turn' : '💙 O\'s turn';
+    }
+    function switchTTTBoard() { tttBoard = tttBoard === 1 ? 2 : 1; tttBoardImg.src = 'board' + tttBoard + '.png'; tttBoardImg.onerror = () => { tttBoardImg.src = 'board' + tttBoard + '.jpg'; }; resetTTT(); }
+    function resetTTT() { tttCells = Array(9).fill(null); tttTurn = 'X'; tttGameOver = false; tttTurnDisplay.textContent = '❤️ X\'s turn'; tttContainer.querySelectorAll('.ttt-x, .ttt-o').forEach(el => el.remove()); buildTTTCells(); }
+
+    // ====== GRAMMAR ======
+    function loadGrammarQuestion() {
+        if (grammarIndex >= grammarShuffled.length) {
+            grammarSentence.textContent = '🎉 All done!';
+            grammarSelect.style.display = 'none';
+            grammarResult.textContent = `Score: ${grammarScore} / ${grammarShuffled.length}`;
+            grammarResult.className = 'result correct';
+            btnGrammarRestart.style.display = 'inline-block';
+            grammarProgress.textContent = '';
+            return;
+        }
+        const q = grammarShuffled[grammarIndex];
+        grammarSentence.textContent = q.sentence;
+        grammarSelect.value = '';
+        grammarResult.textContent = '';
+        grammarResult.className = 'result';
+        grammarProgress.textContent = `${grammarIndex + 1} / ${grammarShuffled.length}`;
+        btnGrammarRestart.style.display = 'none';
+        grammarSelect.style.display = 'inline-block';
+    }
+
+    function resetGrammar() {
+        grammarShuffled = shuffleArray([...grammarQuestions]);
+        grammarIndex = 0;
+        grammarScore = 0;
+        loadGrammarQuestion();
+    }
+
+    grammarSelect.addEventListener('change', function() {
+        if (grammarIndex >= grammarShuffled.length) return;
+        const q = grammarShuffled[grammarIndex];
+        const userAnswer = this.value;
+        if (userAnswer === q.answer) {
+            grammarResult.textContent = '✅ Correct!';
+            grammarResult.className = 'result correct';
+            grammarScore++;
+            playClick();
+            grammarIndex++;
+            if (grammarIndex >= grammarShuffled.length) {
+                setTimeout(() => { playFanfare(); loadGrammarQuestion(); }, 300);
+            } else {
+                setTimeout(() => loadGrammarQuestion(), 600);
+            }
+        } else {
+            grammarResult.textContent = '❌ Oops! Try again!';
+            grammarResult.className = 'result wrong';
+            this.value = '';
+        }
+    });
+
+    function setMode(newMode) {
+        speechSynthesis.cancel();
+        mode = newMode; isLocked = false; closeWritingPopup();
+        
+        ['btnFree','btnListen','btnTTT','btnDraw','btnGrammar'].forEach(id => {
+            const btn = document.getElementById(id);
+            if (btn) { btn.style.background = 'white'; btn.style.color = '#ff6b8a'; }
+        });
+        const activeBtn = document.getElementById('btn' + newMode.charAt(0).toUpperCase() + newMode.slice(1));
+        if (activeBtn) { activeBtn.style.background = '#ff6b8a'; activeBtn.style.color = 'white'; }
+        
+        clearClothes(); feedback.textContent = ''; feedback.className = 'feedback';
+        taskBar.style.background = 'rgba(255,255,255,0.9)'; taskBar.style.color = '#e74c3c';
+        
+        tttContainer.classList.remove('show');
+        grammarContainer.classList.remove('show');
+        drawOverlay.classList.remove('show');
+        btnReady.classList.add('hidden');
+        bigCheckBtn.classList.remove('show');
+        roomBg.style.display = 'none';
+        emmaArea.style.display = 'none';
+        clothingOnEmma.innerHTML = ''; wearing = [];
+        
+        if (mode === 'free') {
+            roomBg.style.display = 'block'; emmaArea.style.display = 'block';
+            taskBar.textContent = 'Dress Emma and click «I\'m ready!»'; btnReady.classList.remove('hidden');
+        } else if (mode === 'listen') {
+            roomBg.style.display = 'block'; emmaArea.style.display = 'block';
+            bigCheckBtn.classList.add('show'); bigCheckBtn.disabled = false;
+            shuffledTasks = shuffleArray([...listenTasks]); taskIndex = 0; newListenTask();
+        } else if (mode === 'ttt') {
+            tttContainer.classList.add('show');
+            taskBar.innerHTML = '🎯 Tic Tac Toe: say the word aloud! <button class="btn-stop" onclick="speechSynthesis.cancel()">⏹</button>';
+            resetTTT();
+        } else if (mode === 'draw') {
+            drawOverlay.classList.add('show');
+            taskBar.innerHTML = '✏️ Draw yourself! Then write a sentence. <button class="btn-stop" onclick="speechSynthesis.cancel()">⏹</button>';
+            if (!drawCtx) initDrawCanvas();
+        } else if (mode === 'grammar') {
+            grammarContainer.classList.add('show');
+            taskBar.innerHTML = '📝 Choose HAVE or HAS <button class="btn-stop" onclick="speechSynthesis.cancel()">⏹</button>';
+            resetGrammar();
+        }
+    }
+
+    function newListenTask() {
+        if (taskIndex >= shuffledTasks.length) { shuffledTasks = shuffleArray([...listenTasks]); taskIndex = 0; }
+        currentTask = shuffledTasks[taskIndex]; taskIndex++;
+        taskBar.innerHTML = `<b>${currentTask.text}</b> <button class="btn-hear" onclick="speak(currentTask.text)">🔊</button> <button class="btn-stop" onclick="speechSynthesis.cancel()">⏹</button>`;
+        taskBar.style.background = taskColors[Math.floor(Math.random() * taskColors.length)]; taskBar.style.color = '#2c3e50';
+        feedback.textContent = ''; feedback.className = 'feedback'; clearClothesSilent(); isLocked = false; bigCheckBtn.disabled = false;
+        speak(currentTask.text);
+    }
+
+    function openWritingPopup() { if (wearing.length === 0) { showFeedback('👗 Put some clothes on Emma first!', false); return; } writingPopup.classList.add('show'); popupInput.value = ''; popupInput.placeholder = 'Emma has got...'; document.querySelector('.popup-example').innerHTML = '💡 Example: <b>Emma has got a pink dress and a bow!</b>'; popupInput.focus(); }
+    function closeWritingPopup() { writingPopup.classList.remove('show'); }
+    function checkFromPopup() {
+        const userText = popupInput.value.trim();
+        if (!userText) { showFeedback('✏️ Write a sentence first!', false); return; }
+        if (mode === 'draw') {
+            if (!userText.toLowerCase().includes('have got') && !userText.toLowerCase().includes('haven\'t got')) { showFeedback('💡 Try using "I have got..." or "I haven\'t got..."', false); return; }
+            closeWritingPopup(); showFeedback('🌟 Great sentence! Now say it aloud!', true); playFanfare();
+        } else {
+            if (wearing.length === 0) return;
+            const allKw = wearing.map(img => img.dataset.kw.split(',')).flat(), lower = userText.toLowerCase();
+            const extra = ['dress','skirt','coat','hat','scarf','boots','sweater','jacket','bow','trousers','t-shirt','tshirt'].filter(w => lower.includes(w) && !allKw.some(k => k.includes(w)));
+            const allFound = wearing.every(img => img.dataset.kw.split(',').some(kw => lower.includes(kw)));
+            if (allFound && extra.length === 0) { isLocked = true; closeWritingPopup(); showFeedback('', true); score++; showAmazing(); spawnHearts(); playFanfare(); updateScore(); }
+            else if (extra.length) { showFeedback('❌ Emma hasn\'t got: ' + extra.join(', '), false); }
+            else { showFeedback('🤔 Something is missing!', false); }
+        }
+    }
+
+    function checkListenTask() {
+        if (isLocked || !currentTask || wearing.length === 0) { if (!isLocked) showFeedback('👗 Put some clothes on Emma first!', false); return; }
+        const allKw = wearing.map(img => img.dataset.kw.split(',')).flat().map(k => k.trim());
+        if (currentTask.req.every(req => allKw.some(k => k.includes(req)))) {
+            isLocked = true; bigCheckBtn.disabled = true; showFeedback('', true); score++; showAmazing(); spawnHearts(); playFanfare(); updateScore();
+            setTimeout(() => { newListenTask(); }, 4000);
+        } else { showFeedback('❌ Not quite! Listen again! 🔊', false); }
+    }
+
+    function showAmazing() { const phrase = amazingPhrases[Math.floor(Math.random() * amazingPhrases.length)]; const o = document.createElement('div'); o.className = 'amazing-overlay'; o.textContent = phrase; mainArea.appendChild(o); setTimeout(() => o.remove(), 800); }
+    function spawnHearts() { for (let i=0;i<10;i++) { const h=document.createElement('div'); h.className='heart-burst'; h.textContent=['💖','💕','💗','💝','✨','🌟'][Math.floor(Math.random()*6)]; h.style.left=(35+Math.random()*30)+'%'; h.style.top=(45+Math.random()*20)+'%'; h.style.animationDelay=Math.random()*0.4+'s'; mainArea.appendChild(h); setTimeout(()=>h.remove(),1500); } }
+    function showFeedback(msg, ok) { feedback.textContent = msg; feedback.className = 'feedback ' + (ok ? 'correct' : 'wrong'); }
+    function updateScore() { scoreDisplay.textContent = '⭐ ' + score; }
+    function clearClothes() { wearing.forEach(img => { img.style.opacity = '0'; img.style.transform = 'translate(-50%, -50%) scale(0.3)'; }); setTimeout(() => { clothingOnEmma.innerHTML = ''; wearing = []; feedback.textContent = ''; feedback.className = 'feedback'; }, 200); }
+    function clearClothesSilent() { clothingOnEmma.innerHTML = ''; wearing = []; }
+
+    function buildWardrobe() {
+        wardrobe.innerHTML = '';
+        wardrobeItems.forEach((item, index) => {
+            const div = document.createElement('div'); div.className = 'wardrobe-item';
+            div.innerHTML = `<img src="${item.file}" alt="${item.id}" onerror="this.src='${item.alt}'"><span class="wardrobe-label" style="color:${item.lc}">${item.label}</span>`;
+            div.addEventListener('click', () => placeItem(index)); wardrobe.appendChild(div);
+        });
+    }
+    function placeItem(index) {
+        const item = wardrobeItems[index], size = clothingSizes[item.id] || 40;
+        const img = document.createElement('img'); img.src = item.file; img.onerror = () => { img.src = item.alt; };
+        img.style.left = '50%'; img.style.top = '50%'; img.style.width = size + '%'; img.dataset.kw = item.kw.join(',');
+        img.classList.add(item.z);
+        img.addEventListener('mousedown', (e) => { e.preventDefault(); dragItem = img; const r = img.getBoundingClientRect(); dragOffsetX = e.clientX - r.left - r.width/2; dragOffsetY = e.clientY - r.top - r.height/2; img.style.zIndex = '8'; });
+        img.addEventListener('touchstart', (e) => { dragItem = img; const r = img.getBoundingClientRect(); dragOffsetX = e.touches[0].clientX - r.left - r.width/2; dragOffsetY = e.touches[0].clientY - r.top - r.height/2; img.style.zIndex = '8'; });
+        clothingOnEmma.appendChild(img); wearing.push(img);
+        if (mode === 'free' && item.name) speak(item.name);
+    }
+    document.addEventListener('mousemove', (e) => { if (!dragItem) return; const r = mainArea.getBoundingClientRect(); dragItem.style.left = ((e.clientX - r.left - dragOffsetX)/r.width*100)+'%'; dragItem.style.top = ((e.clientY - r.top - dragOffsetY)/r.height*100)+'%'; });
+    document.addEventListener('mouseup', () => { if (dragItem) { dragItem.classList.contains('z-bottom') ? dragItem.style.zIndex = '5' : dragItem.classList.contains('z-mid') ? dragItem.style.zIndex = '6' : dragItem.style.zIndex = '7'; dragItem = null; } });
+    document.addEventListener('touchmove', (e) => { if (!dragItem) return; e.preventDefault(); const r = mainArea.getBoundingClientRect(); dragItem.style.left = ((e.touches[0].clientX - r.left - dragOffsetX)/r.width*100)+'%'; dragItem.style.top = ((e.touches[0].clientY - r.top - dragOffsetY)/r.height*100)+'%'; }, { passive: false });
+    document.addEventListener('touchend', () => { if (dragItem) { dragItem.classList.contains('z-bottom') ? dragItem.style.zIndex = '5' : dragItem.classList.contains('z-mid') ? dragItem.style.zIndex = '6' : dragItem.style.zIndex = '7'; dragItem = null; } });
+    clothingOnEmma.addEventListener('dblclick', (e) => { if (e.target.tagName === 'IMG') { const img = e.target; const idx = wearing.indexOf(img); if (idx > -1) wearing.splice(idx, 1); img.style.opacity = '0'; img.style.transform = 'translate(-50%, -50%) scale(0.3)'; setTimeout(() => img.remove(), 200); feedback.textContent = ''; feedback.className = 'feedback'; } });
+
+    buildWardrobe(); buildDrawToolbar(); setMode('free');
+</script>
+</body>
+</html>
