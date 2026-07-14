@@ -8,7 +8,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #fdf6e3; min-height: 100vh; display: flex; justify-content: center; align-items: center; font-family: 'Comic Sans MS', 'Segoe UI', sans-serif; padding: 10px; }
         .game-wrapper { display: flex; gap: 10px; align-items: flex-start; width: 100%; max-width: 950px; }
-        .main-area { position: relative; flex: 1; aspect-ratio: 4/3; border-radius: 20px; overflow: hidden; box-shadow: 0 8px 25px rgba(0,0,0,0.15); border: 3px solid #e8c4a0; background: #fff; touch-action: none; }
+        .main-area { position: relative; flex: 1; aspect-ratio: 4/3; border-radius: 20px; overflow: hidden; box-shadow: 0 8px 25px rgba(0,0,0,0.15); border: 3px solid #e8c4a0; background: #fff; touch-action: none; min-height: 300px; }
         .room-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; pointer-events: none; display: block; }
         .emma-area { position: absolute; bottom: 3%; left: 50%; transform: translateX(-50%); width: 50%; height: 80%; z-index: 2; pointer-events: none; display: block; }
         .emma-base { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; height: 100%; object-fit: contain; z-index: 3; }
@@ -39,6 +39,7 @@
         @keyframes amazingPop { 0% { transform: translate(-50%, -50%) scale(0); opacity: 0; } 50% { transform: translate(-50%, -50%) scale(1.4); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; } }
         .heart-burst { position: absolute; pointer-events: none; z-index: 150; font-size: 24px; animation: heartUp 1.5s ease forwards; }
         @keyframes heartUp { 0% { transform: translateY(0) scale(0.5); opacity: 1; } 100% { transform: translateY(-80px) scale(1.6); opacity: 0; } }
+
         .wardrobe { width: 170px; background: rgba(255,255,255,0.7); border-radius: 14px; padding: 8px; display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border: 2px solid #e8c4a0; max-height: 500px; overflow-y: auto; z-index: 5; align-content: flex-start; }
         .wardrobe-item { width: 65px; height: auto; border-radius: 10px; cursor: pointer; background: rgba(255,255,255,0.8); border: 2px dashed #e8c4a0; display: flex; flex-direction: column; align-items: center; transition: 0.15s; user-select: none; padding: 4px; }
         .wardrobe-item:hover { border-color: #ff6b8a; background: #fff5f5; } .wardrobe-item:active { transform: scale(0.95); }
@@ -73,7 +74,18 @@
         .draw-btn-clear { background: #e67e22; } .draw-btn-save { background: #3498db; } .draw-btn-ready { background: #27ae60; }
         .draw-slider { width: 50px; }
 
-        @media (max-width: 650px) { .game-wrapper { flex-direction: column; } .wardrobe { width: 100%; flex-direction: row; max-height: 120px; overflow-x: auto; } .wardrobe-item { width: 55px; } .wardrobe-item img { width: 38px; height: 38px; } .writing-popup input { width: 160px; } .grammar-card { padding: 14px 16px; } }
+        @media (max-width: 650px) { 
+            .game-wrapper { flex-direction: column; gap: 6px; } 
+            .main-area { aspect-ratio: auto; min-height: 350px; }
+            .wardrobe { width: 100%; flex-direction: row; max-height: 75px; overflow-x: auto; padding: 4px; gap: 4px; } 
+            .wardrobe-item { width: 40px; flex-shrink: 0; } 
+            .wardrobe-item img { width: 30px; height: 30px; } 
+            .wardrobe-label { font-size: 7px; }
+            .writing-popup input { width: 140px; } 
+            .grammar-card { padding: 12px 14px; } 
+            .mode-tabs button, [id^="btn"] { font-size: 9px; padding: 4px 7px; }
+            .task-bar { font-size: 10px; top: 32px; }
+        }
     </style>
 </head>
 <body>
@@ -218,41 +230,20 @@
         const f = document.getElementById('fanfare');
         if (!f) return;
         f.volume = 1; f.currentTime = 0; f.play().catch(() => {});
-        setTimeout(() => {
-            const fade = setInterval(() => {
-                if (f.volume > 0.05) { f.volume -= 0.05; }
-                else { f.pause(); f.currentTime = 0; f.volume = 1; clearInterval(fade); }
-            }, 80);
-        }, 800);
+        setTimeout(() => { const fade = setInterval(() => { if (f.volume > 0.05) { f.volume -= 0.05; } else { f.pause(); f.currentTime = 0; f.volume = 1; clearInterval(fade); } }, 80); }, 800);
     }
 
     function playClick() {
-        try {
-            const ctx = new (window.AudioContext || window.webkitAudioContext)();
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(600, ctx.currentTime);
-            gain.gain.setValueAtTime(0.15, ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
-            osc.connect(gain); gain.connect(ctx.destination);
-            osc.start(); osc.stop(ctx.currentTime + 0.1);
-        } catch(e) {}
+        try { const ctx = new (window.AudioContext || window.webkitAudioContext)(); const osc = ctx.createOscillator(); const gain = ctx.createGain(); osc.type = 'sine'; osc.frequency.setValueAtTime(600, ctx.currentTime); gain.gain.setValueAtTime(0.15, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1); osc.connect(gain); gain.connect(ctx.destination); osc.start(); osc.stop(ctx.currentTime + 0.1); } catch(e) {}
     }
 
     function buildDrawToolbar() {
         drawToolbar.innerHTML = '';
-        drawColors.forEach(color => {
-            const btn = document.createElement('div'); btn.className = 'draw-color' + (color === drawColor ? ' active' : ''); btn.style.background = color;
-            btn.onclick = () => { drawColor = color; document.querySelectorAll('.draw-color').forEach(b => b.classList.remove('active')); btn.classList.add('active'); };
-            drawToolbar.appendChild(btn);
-        });
+        drawColors.forEach(color => { const btn = document.createElement('div'); btn.className = 'draw-color' + (color === drawColor ? ' active' : ''); btn.style.background = color; btn.onclick = () => { drawColor = color; document.querySelectorAll('.draw-color').forEach(b => b.classList.remove('active')); btn.classList.add('active'); }; drawToolbar.appendChild(btn); });
         const slider = document.createElement('input'); slider.type = 'range'; slider.className = 'draw-slider'; slider.min = 2; slider.max = 15; slider.value = drawSize; slider.oninput = () => drawSize = parseInt(slider.value); drawToolbar.appendChild(slider);
         const btnClear = document.createElement('button'); btnClear.className = 'draw-btn draw-btn-clear'; btnClear.textContent = '🗑️'; btnClear.onclick = () => { if (drawCtx) drawCtx.clearRect(0, 0, drawCanvasEl.width, drawCanvasEl.height); }; drawToolbar.appendChild(btnClear);
         const btnSave = document.createElement('button'); btnSave.className = 'draw-btn draw-btn-save'; btnSave.textContent = '💾'; btnSave.onclick = () => { if (drawCanvasEl) { const a = document.createElement('a'); a.download = 'my-drawing.png'; a.href = drawCanvasEl.toDataURL('image/png'); a.click(); } }; drawToolbar.appendChild(btnSave);
-        const btnReadyDraw = document.createElement('button'); btnReadyDraw.className = 'draw-btn draw-btn-ready'; btnReadyDraw.textContent = '✨ Ready!';
-        btnReadyDraw.onclick = () => { writingPopup.classList.add('show'); popupInput.value = ''; popupInput.placeholder = 'I have got...'; document.querySelector('.popup-example').innerHTML = '💡 Example: <b>I have got a red T-shirt and blue jeans!</b>'; feedback.textContent = ''; feedback.className = 'feedback'; };
-        drawToolbar.appendChild(btnReadyDraw);
+        const btnReadyDraw = document.createElement('button'); btnReadyDraw.className = 'draw-btn draw-btn-ready'; btnReadyDraw.textContent = '✨ Ready!'; btnReadyDraw.onclick = () => { writingPopup.classList.add('show'); popupInput.value = ''; popupInput.placeholder = 'I have got...'; document.querySelector('.popup-example').innerHTML = '💡 Example: <b>I have got a red T-shirt and blue jeans!</b>'; feedback.textContent = ''; feedback.className = 'feedback'; }; drawToolbar.appendChild(btnReadyDraw);
     }
 
     function initDrawCanvas() {
@@ -271,165 +262,53 @@
     function buildTTTCells() {
         tttContainer.querySelectorAll('.ttt-cell, .ttt-x, .ttt-o').forEach(el => el.remove());
         const zones = tttBoard === 1 ? board1Zones : board2Zones;
-        zones.forEach((z, i) => {
-            const cell = document.createElement('div'); cell.className = 'ttt-cell';
-            cell.style.top = z.top + '%'; cell.style.left = z.left + '%';
-            cell.style.width = z.width + '%'; cell.style.height = z.height + '%';
-            cell.addEventListener('click', () => tttClick(i)); tttContainer.appendChild(cell);
-        });
+        zones.forEach((z, i) => { const cell = document.createElement('div'); cell.className = 'ttt-cell'; cell.style.top = z.top + '%'; cell.style.left = z.left + '%'; cell.style.width = z.width + '%'; cell.style.height = z.height + '%'; cell.addEventListener('click', () => tttClick(i)); tttContainer.appendChild(cell); });
     }
     function tttClick(i) {
         if (tttGameOver || tttCells[i]) return;
-        tttCells[i] = tttTurn;
-        const zones = tttBoard === 1 ? board1Zones : board2Zones;
-        const z = zones[i];
-        const marker = document.createElement('div');
-        marker.className = 'ttt-' + tttTurn.toLowerCase(); marker.textContent = tttTurn;
-        marker.style.top = (parseFloat(z.top) + parseFloat(z.height)/2) + '%';
-        marker.style.left = (parseFloat(z.left) + parseFloat(z.width)/2) + '%';
-        tttContainer.appendChild(marker);
-        const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-        let winner = null;
+        tttCells[i] = tttTurn; const zones = tttBoard === 1 ? board1Zones : board2Zones; const z = zones[i];
+        const marker = document.createElement('div'); marker.className = 'ttt-' + tttTurn.toLowerCase(); marker.textContent = tttTurn;
+        marker.style.top = (parseFloat(z.top) + parseFloat(z.height)/2) + '%'; marker.style.left = (parseFloat(z.left) + parseFloat(z.width)/2) + '%'; tttContainer.appendChild(marker);
+        const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]]; let winner = null;
         for (const [a,b,c] of wins) { if (tttCells[a] && tttCells[a] === tttCells[b] && tttCells[a] === tttCells[c]) { winner = tttCells[a]; break; } }
         if (winner) { tttGameOver = true; tttTurnDisplay.textContent = '🎉 ' + winner + ' wins!'; playFanfare(); spawnHearts(); showAmazing(); return; }
         if (tttCells.every(c => c)) { tttGameOver = true; tttTurnDisplay.textContent = '🤝 Draw!'; return; }
-        tttTurn = tttTurn === 'X' ? 'O' : 'X';
-        tttTurnDisplay.textContent = tttTurn === 'X' ? '❤️ X\'s turn' : '💙 O\'s turn';
+        tttTurn = tttTurn === 'X' ? 'O' : 'X'; tttTurnDisplay.textContent = tttTurn === 'X' ? '❤️ X\'s turn' : '💙 O\'s turn';
     }
     function switchTTTBoard() { tttBoard = tttBoard === 1 ? 2 : 1; tttBoardImg.src = 'board' + tttBoard + '.png'; tttBoardImg.onerror = () => { tttBoardImg.src = 'board' + tttBoard + '.jpg'; }; resetTTT(); }
     function resetTTT() { tttCells = Array(9).fill(null); tttTurn = 'X'; tttGameOver = false; tttTurnDisplay.textContent = '❤️ X\'s turn'; tttContainer.querySelectorAll('.ttt-x, .ttt-o').forEach(el => el.remove()); buildTTTCells(); }
 
-    // ====== GRAMMAR ======
     function loadGrammarQuestion() {
-        if (grammarIndex >= grammarShuffled.length) {
-            grammarSentence.textContent = '🎉 All done!';
-            grammarSelect.style.display = 'none';
-            grammarResult.textContent = `Score: ${grammarScore} / ${grammarShuffled.length}`;
-            grammarResult.className = 'result correct';
-            btnGrammarRestart.style.display = 'inline-block';
-            grammarProgress.textContent = '';
-            return;
-        }
-        const q = grammarShuffled[grammarIndex];
-        grammarSentence.textContent = q.sentence;
-        grammarSelect.value = '';
-        grammarResult.textContent = '';
-        grammarResult.className = 'result';
-        grammarProgress.textContent = `${grammarIndex + 1} / ${grammarShuffled.length}`;
-        btnGrammarRestart.style.display = 'none';
-        grammarSelect.style.display = 'inline-block';
+        if (grammarIndex >= grammarShuffled.length) { grammarSentence.textContent = '🎉 All done!'; grammarSelect.style.display = 'none'; grammarResult.textContent = `Score: ${grammarScore} / ${grammarShuffled.length}`; grammarResult.className = 'result correct'; btnGrammarRestart.style.display = 'inline-block'; grammarProgress.textContent = ''; return; }
+        const q = grammarShuffled[grammarIndex]; grammarSentence.textContent = q.sentence; grammarSelect.value = ''; grammarResult.textContent = ''; grammarResult.className = 'result'; grammarProgress.textContent = `${grammarIndex + 1} / ${grammarShuffled.length}`; btnGrammarRestart.style.display = 'none'; grammarSelect.style.display = 'inline-block';
     }
-
-    function resetGrammar() {
-        grammarShuffled = shuffleArray([...grammarQuestions]);
-        grammarIndex = 0;
-        grammarScore = 0;
-        loadGrammarQuestion();
-    }
-
+    function resetGrammar() { grammarShuffled = shuffleArray([...grammarQuestions]); grammarIndex = 0; grammarScore = 0; loadGrammarQuestion(); }
     grammarSelect.addEventListener('change', function() {
         if (grammarIndex >= grammarShuffled.length) return;
-        const q = grammarShuffled[grammarIndex];
-        const userAnswer = this.value;
-        if (userAnswer === q.answer) {
-            grammarResult.textContent = '✅ Correct!';
-            grammarResult.className = 'result correct';
-            grammarScore++;
-            playClick();
-            grammarIndex++;
-            if (grammarIndex >= grammarShuffled.length) {
-                setTimeout(() => { playFanfare(); loadGrammarQuestion(); }, 300);
-            } else {
-                setTimeout(() => loadGrammarQuestion(), 600);
-            }
-        } else {
-            grammarResult.textContent = '❌ Oops! Try again!';
-            grammarResult.className = 'result wrong';
-            this.value = '';
-        }
+        const q = grammarShuffled[grammarIndex]; const userAnswer = this.value;
+        if (userAnswer === q.answer) { grammarResult.textContent = '✅ Correct!'; grammarResult.className = 'result correct'; grammarScore++; playClick(); grammarIndex++; if (grammarIndex >= grammarShuffled.length) { setTimeout(() => { playFanfare(); loadGrammarQuestion(); }, 300); } else { setTimeout(() => loadGrammarQuestion(), 600); } }
+        else { grammarResult.textContent = '❌ Oops! Try again!'; grammarResult.className = 'result wrong'; this.value = ''; }
     });
 
     function setMode(newMode) {
-        speechSynthesis.cancel();
-        mode = newMode; isLocked = false; closeWritingPopup();
-        
-        ['btnFree','btnListen','btnTTT','btnDraw','btnGrammar'].forEach(id => {
-            const btn = document.getElementById(id);
-            if (btn) { btn.style.background = 'white'; btn.style.color = '#ff6b8a'; }
-        });
-        const activeBtn = document.getElementById('btn' + newMode.charAt(0).toUpperCase() + newMode.slice(1));
-        if (activeBtn) { activeBtn.style.background = '#ff6b8a'; activeBtn.style.color = 'white'; }
-        
-        clearClothes(); feedback.textContent = ''; feedback.className = 'feedback';
-        taskBar.style.background = 'rgba(255,255,255,0.9)'; taskBar.style.color = '#e74c3c';
-        
-        tttContainer.classList.remove('show');
-        grammarContainer.classList.remove('show');
-        drawOverlay.classList.remove('show');
-        btnReady.classList.add('hidden');
-        bigCheckBtn.classList.remove('show');
-        roomBg.style.display = 'none';
-        emmaArea.style.display = 'none';
-        clothingOnEmma.innerHTML = ''; wearing = [];
-        
-        if (mode === 'free') {
-            roomBg.style.display = 'block'; emmaArea.style.display = 'block';
-            taskBar.textContent = 'Dress Emma and click «I\'m ready!»'; btnReady.classList.remove('hidden');
-        } else if (mode === 'listen') {
-            roomBg.style.display = 'block'; emmaArea.style.display = 'block';
-            bigCheckBtn.classList.add('show'); bigCheckBtn.disabled = false;
-            shuffledTasks = shuffleArray([...listenTasks]); taskIndex = 0; newListenTask();
-        } else if (mode === 'ttt') {
-            tttContainer.classList.add('show');
-            taskBar.innerHTML = '🎯 Tic Tac Toe: say the word aloud! <button class="btn-stop" onclick="speechSynthesis.cancel()">⏹</button>';
-            resetTTT();
-        } else if (mode === 'draw') {
-            drawOverlay.classList.add('show');
-            taskBar.innerHTML = '✏️ Draw yourself! Then write a sentence. <button class="btn-stop" onclick="speechSynthesis.cancel()">⏹</button>';
-            if (!drawCtx) initDrawCanvas();
-        } else if (mode === 'grammar') {
-            grammarContainer.classList.add('show');
-            taskBar.innerHTML = '📝 Choose HAVE or HAS <button class="btn-stop" onclick="speechSynthesis.cancel()">⏹</button>';
-            resetGrammar();
-        }
+        speechSynthesis.cancel(); mode = newMode; isLocked = false; closeWritingPopup();
+        ['btnFree','btnListen','btnTTT','btnDraw','btnGrammar'].forEach(id => { const btn = document.getElementById(id); if (btn) { btn.style.background = 'white'; btn.style.color = '#ff6b8a'; } });
+        const activeBtn = document.getElementById('btn' + newMode.charAt(0).toUpperCase() + newMode.slice(1)); if (activeBtn) { activeBtn.style.background = '#ff6b8a'; activeBtn.style.color = 'white'; }
+        clearClothes(); feedback.textContent = ''; feedback.className = 'feedback'; taskBar.style.background = 'rgba(255,255,255,0.9)'; taskBar.style.color = '#e74c3c';
+        tttContainer.classList.remove('show'); grammarContainer.classList.remove('show'); drawOverlay.classList.remove('show'); btnReady.classList.add('hidden'); bigCheckBtn.classList.remove('show');
+        roomBg.style.display = 'none'; emmaArea.style.display = 'none'; clothingOnEmma.innerHTML = ''; wearing = [];
+        if (mode === 'free') { roomBg.style.display = 'block'; emmaArea.style.display = 'block'; taskBar.textContent = 'Dress Emma and click «I\'m ready!»'; btnReady.classList.remove('hidden'); }
+        else if (mode === 'listen') { roomBg.style.display = 'block'; emmaArea.style.display = 'block'; bigCheckBtn.classList.add('show'); bigCheckBtn.disabled = false; shuffledTasks = shuffleArray([...listenTasks]); taskIndex = 0; newListenTask(); }
+        else if (mode === 'ttt') { tttContainer.classList.add('show'); taskBar.innerHTML = '🎯 Tic Tac Toe: say the word aloud! <button class="btn-stop" onclick="speechSynthesis.cancel()">⏹</button>'; resetTTT(); }
+        else if (mode === 'draw') { drawOverlay.classList.add('show'); taskBar.innerHTML = '✏️ Draw yourself! Then write a sentence. <button class="btn-stop" onclick="speechSynthesis.cancel()">⏹</button>'; if (!drawCtx) initDrawCanvas(); }
+        else if (mode === 'grammar') { grammarContainer.classList.add('show'); taskBar.innerHTML = '📝 Choose HAVE or HAS <button class="btn-stop" onclick="speechSynthesis.cancel()">⏹</button>'; resetGrammar(); }
     }
 
-    function newListenTask() {
-        if (taskIndex >= shuffledTasks.length) { shuffledTasks = shuffleArray([...listenTasks]); taskIndex = 0; }
-        currentTask = shuffledTasks[taskIndex]; taskIndex++;
-        taskBar.innerHTML = `<b>${currentTask.text}</b> <button class="btn-hear" onclick="speak(currentTask.text)">🔊</button> <button class="btn-stop" onclick="speechSynthesis.cancel()">⏹</button>`;
-        taskBar.style.background = taskColors[Math.floor(Math.random() * taskColors.length)]; taskBar.style.color = '#2c3e50';
-        feedback.textContent = ''; feedback.className = 'feedback'; clearClothesSilent(); isLocked = false; bigCheckBtn.disabled = false;
-        speak(currentTask.text);
-    }
-
+    function newListenTask() { if (taskIndex >= shuffledTasks.length) { shuffledTasks = shuffleArray([...listenTasks]); taskIndex = 0; } currentTask = shuffledTasks[taskIndex]; taskIndex++; taskBar.innerHTML = `<b>${currentTask.text}</b> <button class="btn-hear" onclick="speak(currentTask.text)">🔊</button> <button class="btn-stop" onclick="speechSynthesis.cancel()">⏹</button>`; taskBar.style.background = taskColors[Math.floor(Math.random() * taskColors.length)]; taskBar.style.color = '#2c3e50'; feedback.textContent = ''; feedback.className = 'feedback'; clearClothesSilent(); isLocked = false; bigCheckBtn.disabled = false; speak(currentTask.text); }
     function openWritingPopup() { if (wearing.length === 0) { showFeedback('👗 Put some clothes on Emma first!', false); return; } writingPopup.classList.add('show'); popupInput.value = ''; popupInput.placeholder = 'Emma has got...'; document.querySelector('.popup-example').innerHTML = '💡 Example: <b>Emma has got a pink dress and a bow!</b>'; popupInput.focus(); }
     function closeWritingPopup() { writingPopup.classList.remove('show'); }
-    function checkFromPopup() {
-        const userText = popupInput.value.trim();
-        if (!userText) { showFeedback('✏️ Write a sentence first!', false); return; }
-        if (mode === 'draw') {
-            if (!userText.toLowerCase().includes('have got') && !userText.toLowerCase().includes('haven\'t got')) { showFeedback('💡 Try using "I have got..." or "I haven\'t got..."', false); return; }
-            closeWritingPopup(); showFeedback('🌟 Great sentence! Now say it aloud!', true); playFanfare();
-        } else {
-            if (wearing.length === 0) return;
-            const allKw = wearing.map(img => img.dataset.kw.split(',')).flat(), lower = userText.toLowerCase();
-            const extra = ['dress','skirt','coat','hat','scarf','boots','sweater','jacket','bow','trousers','t-shirt','tshirt'].filter(w => lower.includes(w) && !allKw.some(k => k.includes(w)));
-            const allFound = wearing.every(img => img.dataset.kw.split(',').some(kw => lower.includes(kw)));
-            if (allFound && extra.length === 0) { isLocked = true; closeWritingPopup(); showFeedback('', true); score++; showAmazing(); spawnHearts(); playFanfare(); updateScore(); }
-            else if (extra.length) { showFeedback('❌ Emma hasn\'t got: ' + extra.join(', '), false); }
-            else { showFeedback('🤔 Something is missing!', false); }
-        }
-    }
-
-    function checkListenTask() {
-        if (isLocked || !currentTask || wearing.length === 0) { if (!isLocked) showFeedback('👗 Put some clothes on Emma first!', false); return; }
-        const allKw = wearing.map(img => img.dataset.kw.split(',')).flat().map(k => k.trim());
-        if (currentTask.req.every(req => allKw.some(k => k.includes(req)))) {
-            isLocked = true; bigCheckBtn.disabled = true; showFeedback('', true); score++; showAmazing(); spawnHearts(); playFanfare(); updateScore();
-            setTimeout(() => { newListenTask(); }, 4000);
-        } else { showFeedback('❌ Not quite! Listen again! 🔊', false); }
-    }
+    function checkFromPopup() { const userText = popupInput.value.trim(); if (!userText) { showFeedback('✏️ Write a sentence first!', false); return; } if (mode === 'draw') { if (!userText.toLowerCase().includes('have got') && !userText.toLowerCase().includes('haven\'t got')) { showFeedback('💡 Try using "I have got..." or "I haven\'t got..."', false); return; } closeWritingPopup(); showFeedback('🌟 Great sentence! Now say it aloud!', true); playFanfare(); } else { if (wearing.length === 0) return; const allKw = wearing.map(img => img.dataset.kw.split(',')).flat(), lower = userText.toLowerCase(); const extra = ['dress','skirt','coat','hat','scarf','boots','sweater','jacket','bow','trousers','t-shirt','tshirt'].filter(w => lower.includes(w) && !allKw.some(k => k.includes(w))); const allFound = wearing.every(img => img.dataset.kw.split(',').some(kw => lower.includes(kw))); if (allFound && extra.length === 0) { isLocked = true; closeWritingPopup(); showFeedback('', true); score++; showAmazing(); spawnHearts(); playFanfare(); updateScore(); } else if (extra.length) { showFeedback('❌ Emma hasn\'t got: ' + extra.join(', '), false); } else { showFeedback('🤔 Something is missing!', false); } } }
+    function checkListenTask() { if (isLocked || !currentTask || wearing.length === 0) { if (!isLocked) showFeedback('👗 Put some clothes on Emma first!', false); return; } const allKw = wearing.map(img => img.dataset.kw.split(',')).flat().map(k => k.trim()); if (currentTask.req.every(req => allKw.some(k => k.includes(req)))) { isLocked = true; bigCheckBtn.disabled = true; showFeedback('', true); score++; showAmazing(); spawnHearts(); playFanfare(); updateScore(); setTimeout(() => { newListenTask(); }, 4000); } else { showFeedback('❌ Not quite! Listen again! 🔊', false); } }
 
     function showAmazing() { const phrase = amazingPhrases[Math.floor(Math.random() * amazingPhrases.length)]; const o = document.createElement('div'); o.className = 'amazing-overlay'; o.textContent = phrase; mainArea.appendChild(o); setTimeout(() => o.remove(), 800); }
     function spawnHearts() { for (let i=0;i<10;i++) { const h=document.createElement('div'); h.className='heart-burst'; h.textContent=['💖','💕','💗','💝','✨','🌟'][Math.floor(Math.random()*6)]; h.style.left=(35+Math.random()*30)+'%'; h.style.top=(45+Math.random()*20)+'%'; h.style.animationDelay=Math.random()*0.4+'s'; mainArea.appendChild(h); setTimeout(()=>h.remove(),1500); } }
@@ -438,24 +317,8 @@
     function clearClothes() { wearing.forEach(img => { img.style.opacity = '0'; img.style.transform = 'translate(-50%, -50%) scale(0.3)'; }); setTimeout(() => { clothingOnEmma.innerHTML = ''; wearing = []; feedback.textContent = ''; feedback.className = 'feedback'; }, 200); }
     function clearClothesSilent() { clothingOnEmma.innerHTML = ''; wearing = []; }
 
-    function buildWardrobe() {
-        wardrobe.innerHTML = '';
-        wardrobeItems.forEach((item, index) => {
-            const div = document.createElement('div'); div.className = 'wardrobe-item';
-            div.innerHTML = `<img src="${item.file}" alt="${item.id}" onerror="this.src='${item.alt}'"><span class="wardrobe-label" style="color:${item.lc}">${item.label}</span>`;
-            div.addEventListener('click', () => placeItem(index)); wardrobe.appendChild(div);
-        });
-    }
-    function placeItem(index) {
-        const item = wardrobeItems[index], size = clothingSizes[item.id] || 40;
-        const img = document.createElement('img'); img.src = item.file; img.onerror = () => { img.src = item.alt; };
-        img.style.left = '50%'; img.style.top = '50%'; img.style.width = size + '%'; img.dataset.kw = item.kw.join(',');
-        img.classList.add(item.z);
-        img.addEventListener('mousedown', (e) => { e.preventDefault(); dragItem = img; const r = img.getBoundingClientRect(); dragOffsetX = e.clientX - r.left - r.width/2; dragOffsetY = e.clientY - r.top - r.height/2; img.style.zIndex = '8'; });
-        img.addEventListener('touchstart', (e) => { dragItem = img; const r = img.getBoundingClientRect(); dragOffsetX = e.touches[0].clientX - r.left - r.width/2; dragOffsetY = e.touches[0].clientY - r.top - r.height/2; img.style.zIndex = '8'; });
-        clothingOnEmma.appendChild(img); wearing.push(img);
-        if (mode === 'free' && item.name) speak(item.name);
-    }
+    function buildWardrobe() { wardrobe.innerHTML = ''; wardrobeItems.forEach((item, index) => { const div = document.createElement('div'); div.className = 'wardrobe-item'; div.innerHTML = `<img src="${item.file}" alt="${item.id}" onerror="this.src='${item.alt}'"><span class="wardrobe-label" style="color:${item.lc}">${item.label}</span>`; div.addEventListener('click', () => placeItem(index)); wardrobe.appendChild(div); }); }
+    function placeItem(index) { const item = wardrobeItems[index], size = clothingSizes[item.id] || 40; const img = document.createElement('img'); img.src = item.file; img.onerror = () => { img.src = item.alt; }; img.style.left = '50%'; img.style.top = '50%'; img.style.width = size + '%'; img.dataset.kw = item.kw.join(','); img.classList.add(item.z); img.addEventListener('mousedown', (e) => { e.preventDefault(); dragItem = img; const r = img.getBoundingClientRect(); dragOffsetX = e.clientX - r.left - r.width/2; dragOffsetY = e.clientY - r.top - r.height/2; img.style.zIndex = '8'; }); img.addEventListener('touchstart', (e) => { dragItem = img; const r = img.getBoundingClientRect(); dragOffsetX = e.touches[0].clientX - r.left - r.width/2; dragOffsetY = e.touches[0].clientY - r.top - r.height/2; img.style.zIndex = '8'; }); clothingOnEmma.appendChild(img); wearing.push(img); if (mode === 'free' && item.name) speak(item.name); }
     document.addEventListener('mousemove', (e) => { if (!dragItem) return; const r = mainArea.getBoundingClientRect(); dragItem.style.left = ((e.clientX - r.left - dragOffsetX)/r.width*100)+'%'; dragItem.style.top = ((e.clientY - r.top - dragOffsetY)/r.height*100)+'%'; });
     document.addEventListener('mouseup', () => { if (dragItem) { dragItem.classList.contains('z-bottom') ? dragItem.style.zIndex = '5' : dragItem.classList.contains('z-mid') ? dragItem.style.zIndex = '6' : dragItem.style.zIndex = '7'; dragItem = null; } });
     document.addEventListener('touchmove', (e) => { if (!dragItem) return; e.preventDefault(); const r = mainArea.getBoundingClientRect(); dragItem.style.left = ((e.touches[0].clientX - r.left - dragOffsetX)/r.width*100)+'%'; dragItem.style.top = ((e.touches[0].clientY - r.top - dragOffsetY)/r.height*100)+'%'; }, { passive: false });
